@@ -25,7 +25,7 @@ import petlib
 
 from os import urandom
 from petlib.cipher import Cipher
-
+import pdb
 def encrypt_message(K, message):
     """ Encrypt a message under a key K """
 
@@ -33,6 +33,12 @@ def encrypt_message(K, message):
     
     ## YOUR CODE HERE
 
+    # Use library function to encrypt the plaintext.
+    aes = Cipher("aes-128-gcm")
+    iv = urandom(16)
+    
+    ciphertext, tag = aes.quick_gcm_enc(K,iv,plaintext)
+  
     return (iv, ciphertext, tag)
 
 def decrypt_message(K, iv, ciphertext, tag):
@@ -40,14 +46,21 @@ def decrypt_message(K, iv, ciphertext, tag):
 
         In case the decryption fails, throw an exception.
     """
+    
     ## YOUR CODE HERE
 
+    aes = Cipher("aes-128-gcm")
+   
+    
+    plain = aes.quick_gcm_dec(K,iv,ciphertext,tag)
+    
     return plain.encode("utf8")
 
 #####################################################
 # TASK 3 -- Understand Elliptic Curve Arithmetic
 #           - Test if a point is on a curve.
 #           - Implement Point addition.
+
 #           - Implement Point doubling.
 #           - Implement Scalar multiplication (double & add).
 #           - Implement Scalar multiplication (Montgomery ladder).
