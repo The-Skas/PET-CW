@@ -163,10 +163,25 @@ def point_double(a, b, p, x, y):
 
     Returns the point representing the double of the input (x, y).
     """  
+    #Calculate lam
+    xpsqr = x.mod_mul(x,p)
+    left_oper = Bn(3).mod_mul(xpsqr, p)
 
-    # ADD YOUR CODE BELOW
-    xr, yr = None, None
+    twoyp = Bn(2).mod_mul(y, p)
+    inv_twoyp = twoyp.mod_inverse(m=p)
+    right_oper = a.mod_mul(inv_twoyp, p)
 
+    lam = left_oper.mod_add(right_oper)
+    
+    #Calculate xr
+    lamsqr = lam.mod_mul(lam, p)
+    twoxp = Bn(2).mod_mul(x)
+    xr = lamsqr.mod_minus(twoxp) 
+    
+    #Calculate yr
+    xp_min_xr = x.mod_sub(xr, p)
+    lam_times_diff = lam.mod_mul(xp_min_xr, p)
+    yr = lam_times_diff.mod_sub(y, p)
     return xr, yr
 
 def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
