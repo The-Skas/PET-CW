@@ -113,7 +113,7 @@ def point_add(a, b, p, x0, y0, x1, y1):
     # Raise exception, test if points are equal
     
     if ((x0 == x1) and (y0 == y1)):
-       raise Exception ('point_add:Inputs are equal')
+       raise Exception ('EC Points must not be equal')
     
     # if x1 == x0 then there is no inverse, also check both points are on curve
     if (x0 == x1) or (not is_point_on_curve(a, b, p, x0, y0)) or (not is_point_on_curve(a, b, p, x1, y1)):
