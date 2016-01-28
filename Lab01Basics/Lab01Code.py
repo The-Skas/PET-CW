@@ -12,7 +12,7 @@
 # TASK 1 -- Ensure petlib is installed on the System
 #           and also pytest. Ensure the Lab Code can 
 #           be imported.
-
+import pytest
 import petlib
 
 #####################################################
@@ -170,7 +170,7 @@ def point_double(a, b, p, x, y):
     twoyp = Bn(2).mod_mul(y, p)
     inv_twoyp = twoyp.mod_inverse(m=p)
     right_oper = a.mod_mul(inv_twoyp, p)
-
+    pytest.set_trace()
     lam = left_oper.mod_add(right_oper)
     
     #Calculate xr
