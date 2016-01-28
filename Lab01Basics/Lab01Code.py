@@ -163,26 +163,33 @@ def point_double(a, b, p, x, y):
 
     Returns the point representing the double of the input (x, y).
     """  
-    #Calculate lam
-    xpsqr = x.mod_mul(x,p)
-    left_oper = Bn(3).mod_mul(xpsqr, p)
 
-    twoyp = Bn(2).mod_mul(y, p)
-    inv_twoyp = twoyp.mod_inverse(m=p)
-    right_oper = a.mod_mul(inv_twoyp, p)
-    pytest.set_trace()
-    lam = left_oper.mod_add(right_oper)
+    if x==None and y==None:
+        return None,None
     
-    #Calculate xr
-    lamsqr = lam.mod_mul(lam, p)
-    twoxp = Bn(2).mod_mul(x)
-    xr = lamsqr.mod_minus(twoxp) 
+    xsq = x.mod_mul(x,p)
+    xsq3 = Bn(3).mod_mul(xsq,p)
+    num = xsq3.mod_add(a,p)
+    y2 = Bn(2).mod_mul(y,p)
+    y2inv = y2.mod_inverse(m = p)
+    lam = num.mod_mul(y2inv,p)
     
-    #Calculate yr
-    xp_min_xr = x.mod_sub(xr, p)
-    lam_times_diff = lam.mod_mul(xp_min_xr, p)
-    yr = lam_times_diff.mod_sub(y, p)
-    return xr, yr
+    xr = lam.mod_mul(lam,p)  
+    xr = xr.mod_sub(x,p)
+    xr = xr.mod_sub(x,p)
+
+    yr = lam.mod_mul(x.mod_sub(xr,p), p) 
+    yr = yr.mod_sub(y,p)
+
+    return (xr, yr)
+
+
+
+
+
+
+
+
 
 def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     """
@@ -257,17 +264,18 @@ def ecdsa_key_gen():
 def ecdsa_sign(G, priv_sign, message):
     """ Sign the SHA256 digest of the message using ECDSA and return a signature """
     plaintext =  message.encode("utf8")
+    digest = sha256(plaintext).digest()
 
-    ## YOUR CODE HERE
+    sig = do_ecdsa_sign(G, priv_sign, digest)
 
     return sig
 
 def ecdsa_verify(G, pub_verify, message, sig):
     """ Verify the ECDSA signature on the message """
     plaintext =  message.encode("utf8")
+    digest = sha256(plaintext).digest()
 
-    ## YOUR CODE HERE
-
+    res = do_ecdsa_verify(G, pub_verify, sig, digest)	
     return res
 
 #####################################################
