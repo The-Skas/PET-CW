@@ -1,4 +1,0 @@
-{
-  "Lab01Tests.py::test_Point_scalar_mult_double_and_add": true, 
-  "Lab01Tests.py::test_Point_scalar_mult_montgomerry_ladder": true
-}
