@@ -338,9 +338,19 @@ def test_check_fail():
 @pytest.mark.task5
 def test_key_gen():
     from Lab01Code import dh_get_key
-    G, priv, pub = dh_get_key()
-    message = u"HelloWorld"
-    iv, ciphertext, tag, prev_dec = dh_encrypt(pub, message)
+    from Lab01Code import dh_encrypt
+    from Lab01Code import dh_decrypt
     
-    dh_decrypt(pub, priv) 
-     
+    G, bob_priv, bob_pub = dh_get_key()
+    message = u"HelloWorld"
+    cipherblock = dh_encrypt(bob_pub, message)
+    #Should throw error on fail  
+    message_dec = dh_decrypt( bob_priv, cipherblock) 
+    assert message_dec == b'HelloWorld' 
+
+    #assert publickeys are different 
+
+    alice_pub = cipherblock.publickey
+    assert not bob_pub == alice_pub
+
+    

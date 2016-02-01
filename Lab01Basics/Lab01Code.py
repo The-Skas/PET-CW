@@ -325,8 +325,11 @@ def ecdsa_verify(G, pub_verify, message, sig):
 #           - Use Bob's private key to decrypt the message.
 #
 # NOTE: 
-
-
+from collections import namedtuple
+CipherBlock  = namedtuple('CipherBlock', ['iv', 
+                                                   'tag', 
+                                                   'ciphertext', 
+                                                   'publickey'])
 def dh_get_key():
     """ Generate a DH key pair """
     G = EcGroup()
@@ -337,6 +340,7 @@ def dh_get_key():
 
 def dh_encrypt(pub, message):
     # first get our public/private key pair
+    from binascii import unhexlify
     G, our_priv_dec, our_pub_enc = dh_get_key()
     # generate fresh shared key from the pub key passed and our own private key
     # DH elliptic curve exchange
@@ -368,13 +372,13 @@ def dh_encrypt(pub, message):
     #print keystring
     ciphertext, tag = aes.quick_gcm_enc(key,iv,plaintext)
   
-    return (iv, ciphertext, tag, our_pub_enc)
+    return CipherBlock(iv,  tag, ciphertext, our_pub_enc)
 
 
-def dh_decrypt(pub,priv, ciphertext, iv, tag):
+def dh_decrypt(priv, cipherblock):
     """ Decrypt a received message encrypted using your public key, 
     of which the private key is provided"""
-    
+    from binascii import unhexlify
     ## YOUR CODE HERE
     # pub, Bob's public key
     # priv, my private key
@@ -382,16 +386,16 @@ def dh_decrypt(pub,priv, ciphertext, iv, tag):
     # iv: the initialisation vector
     # tag: the tag created during encipherment
          
-    shared_point = pub.pt_mul(priv)
+    shared_point = cipherblock.publickey.pt_mul(priv)
     
     x, y = shared_point.get_affine()
     x = x % Bn.from_hex("100000000000000000000000000000000") # that's 1 with 32 zeros
     keystring = x.hex().encode("utf8")
     print keystring
-    key = unhexlify(keystring)
-
+    key = unhexlify(keystring) 
+    #Should through error on fail encryption!
     aes = Cipher("aes-128-gcm")
-    plain = aes.quick_gcm_dec(key,iv,ciphertext,tag)
+    plain = aes.quick_gcm_dec(key,cipherblock.iv,cipherblock.ciphertext,cipherblock.tag)
     
     return plain.encode("utf8")
 
