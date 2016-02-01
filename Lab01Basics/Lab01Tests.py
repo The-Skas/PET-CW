@@ -353,4 +353,6 @@ def test_key_gen():
     alice_pub = cipherblock.publickey
     assert not bob_pub == alice_pub
 
-    
+    #assert should throw an exception on failed decrypt
+ 
+    decrypt_message(K, iv, urandom(len(ciphertext)), tag)
