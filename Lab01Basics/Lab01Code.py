@@ -36,7 +36,7 @@ def encrypt_message(K, message):
     # Use library function to encrypt the plaintext.
     aes = Cipher("aes-128-gcm")
     iv = urandom(16)
-    
+    print type(K)
     ciphertext, tag = aes.quick_gcm_enc(K,iv,plaintext)
   
     return (iv, ciphertext, tag)
@@ -203,14 +203,6 @@ def point_double(a, b, p, x, y):
 
     return (xr, yr)
 
-
-
-
-
-
-
-
-
 def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     """
     Implement Point multiplication with a scalar:
@@ -227,11 +219,20 @@ def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     """
     Q = (None, None)
     P = (x, y)
+    xq = Q[0]      # tuples are immutable so we have to split them to do arithmetic on them!
+    yq = Q[1] 
+    xp = P[0]
+    yp = P[1]
+    
 
     for i in range(scalar.num_bits()):
-        pass ## ADD YOUR CODE HERE
+        if scalar.is_bit_set(i):
+           
+           xq, yq = point_add(a, b, p, xq, yq, xp, yp)
+        xp, yp = point_double(a, b, p, xp, yp)
+        
+    return xq, yq
 
-    return Q
 
 def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
     """
@@ -253,11 +254,27 @@ def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
     """
     R0 = (None, None)
     R1 = (x, y)
+    x0 = R0[0]      # tuples are immutable so we have to split them to do arithmetic on them!
+    y0 = R0[1] 
+    x1 = R1[0]
+    y1 = R1[1]
 
+#   for i in num_bits(P)-1 to zero:
     for i in reversed(range(0,scalar.num_bits())):
-        pass ## ADD YOUR CODE HERE
-
-    return R0
+#       if di = 0:
+        if not scalar.is_bit_set(i): 
+#           R1 = R0 + R1
+            x1, y1 = point_add(a, b, p, x0, y0, x1, y1)   
+#           R0 = 2R0
+            x0, y0 = point_double(a, b, p, x0, y0)
+#       else
+        else: 
+#           R0 = R0 + R1
+            x0, y0 = point_add(a, b, p, x0, y0, x1, y1)   
+#           R1 = 2 R1
+            x1, y1 = point_double(a, b, p, x1, y1)
+#   return R0
+    return x0, y0
 
 
 #####################################################
@@ -284,8 +301,11 @@ def ecdsa_key_gen():
 def ecdsa_sign(G, priv_sign, message):
     """ Sign the SHA256 digest of the message using ECDSA and return a signature """
     plaintext =  message.encode("utf8")
-
     ## YOUR CODE HERE
+    digest = sha256(plaintext).digest()
+    sig = do_ecdsa_sign(G,priv_sign,digest)
+    
+
 
     return sig
 
@@ -294,7 +314,8 @@ def ecdsa_verify(G, pub_verify, message, sig):
     plaintext =  message.encode("utf8")
 
     ## YOUR CODE HERE
-
+    digest = sha256(plaintext).digest() 
+    res = do_ecdsa_verify(G, pub_verify, sig, digest)
     return res
 
 #####################################################
@@ -320,9 +341,16 @@ def dh_encrypt(pub, message):
         - Derive a fresh shared key.
         - Use the shared key to AES_GCM encrypt the message.
         - Optionally: sign the message.
-    """
-    
+    """   
     ## YOUR CODE HERE
+    
+    
+    
+    
+    
+    
+    
+    
     pass
 
 def dh_decrypt(priv, ciphertext):
@@ -357,4 +385,11 @@ def test_fails():
 #           - Fix one implementation to not leak information.
 
 def time_scalar_mul():
+    
+    #Test 1: time salar multiplication of double-and-add routine
+    
+    
+    
     pass
+    
+    

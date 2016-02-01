@@ -36,7 +36,7 @@ def encrypt_message(K, message):
     # Use library function to encrypt the plaintext.
     aes = Cipher("aes-128-gcm")
     iv = urandom(16)
-    
+    print type(K)
     ciphertext, tag = aes.quick_gcm_enc(K,iv,plaintext)
   
     return (iv, ciphertext, tag)
@@ -113,7 +113,7 @@ def point_add(a, b, p, x0, y0, x1, y1):
     # Raise exception, test if points are equal
     
     if ((x0 == x1) and (y0 == y1)):
-       raise Exception ('point_add:Inputs are equal')
+       raise Exception ('EC Points must not be equal')
     
     # if x1 == x0 then there is no inverse, also check both points are on curve
     if (x0 == x1) or (not is_point_on_curve(a, b, p, x0, y0)) or (not is_point_on_curve(a, b, p, x1, y1)):
@@ -163,11 +163,45 @@ def point_double(a, b, p, x, y):
 
     Returns the point representing the double of the input (x, y).
     """  
+    #Calculate lam
+#    xpsqr = x.mod_mul(x,p)
+#    left_oper = Bn(3).mod_mul(xpsqr, p)
 
-    # ADD YOUR CODE BELOW
-    xr, yr = None, None
+#    twoyp = Bn(2).mod_mul(y, p)
+#    inv_twoyp = twoyp.mod_inverse(m=p)
+#    right_oper = a.mod_mul(inv_twoyp, p)
 
-    return xr, yr
+#   lam = left_oper.mod_add(right_oper)
+    
+    #Calculate xr
+#    lamsqr = lam.mod_mul(lam, p)
+#    twoxp = Bn(2).mod_mul(x)
+#   xr = lamsqr.mod_minus(twoxp) 
+    
+    #Calculate yr
+#    xp_min_xr = x.mod_sub(xr, p)
+#    lam_times_diff = lam.mod_mul(xp_min_xr, p)
+#    yr = lam_times_diff.mod_sub(y, p)
+#    return xr, yr
+
+    if x==None and y==None:
+        return None,None
+    
+    xsq = x.mod_mul(x,p)
+    xsq3 = Bn(3).mod_mul(xsq,p)
+    num = xsq3.mod_add(a,p)
+    y2 = Bn(2).mod_mul(y,p)
+    y2inv = y2.mod_inverse(m = p)
+    lam = num.mod_mul(y2inv,p)
+    
+    xr = lam.mod_mul(lam,p)  
+    xr = xr.mod_sub(x,p)
+    xr = xr.mod_sub(x,p)
+
+    yr = lam.mod_mul(x.mod_sub(xr,p), p) 
+    yr = yr.mod_sub(y,p)
+
+    return (xr, yr)
 
 def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     """
@@ -185,11 +219,20 @@ def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     """
     Q = (None, None)
     P = (x, y)
+    xq = Q[0]      # tuples are immutable so we have to split them to do arithmetic on them!
+    yq = Q[1] 
+    xp = P[0]
+    yp = P[1]
+    
 
     for i in range(scalar.num_bits()):
-        pass ## ADD YOUR CODE HERE
+        if scalar.is_bit_set(i):
+           
+           xq, yq = point_add(a, b, p, xq, yq, xp, yp)
+        xp, yp = point_double(a, b, p, xp, yp)
+        
+    return xq, yq
 
-    return Q
 
 def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
     """
@@ -211,11 +254,27 @@ def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
     """
     R0 = (None, None)
     R1 = (x, y)
+    x0 = R0[0]      # tuples are immutable so we have to split them to do arithmetic on them!
+    y0 = R0[1] 
+    x1 = R1[0]
+    y1 = R1[1]
 
+#   for i in num_bits(P)-1 to zero:
     for i in reversed(range(0,scalar.num_bits())):
-        pass ## ADD YOUR CODE HERE
-
-    return R0
+#       if di = 0:
+        if not scalar.is_bit_set(i): 
+#           R1 = R0 + R1
+            x1, y1 = point_add(a, b, p, x0, y0, x1, y1)   
+#           R0 = 2R0
+            x0, y0 = point_double(a, b, p, x0, y0)
+#       else
+        else: 
+#           R0 = R0 + R1
+            x0, y0 = point_add(a, b, p, x0, y0, x1, y1)   
+#           R1 = 2 R1
+            x1, y1 = point_double(a, b, p, x1, y1)
+#   return R0
+    return x0, y0
 
 
 #####################################################
@@ -242,8 +301,11 @@ def ecdsa_key_gen():
 def ecdsa_sign(G, priv_sign, message):
     """ Sign the SHA256 digest of the message using ECDSA and return a signature """
     plaintext =  message.encode("utf8")
-
     ## YOUR CODE HERE
+    digest = sha256(plaintext).digest()
+    sig = do_ecdsa_sign(G,priv_sign,digest)
+    
+
 
     return sig
 
@@ -252,7 +314,8 @@ def ecdsa_verify(G, pub_verify, message, sig):
     plaintext =  message.encode("utf8")
 
     ## YOUR CODE HERE
-
+    digest = sha256(plaintext).digest() 
+    res = do_ecdsa_verify(G, pub_verify, sig, digest)
     return res
 
 #####################################################
@@ -278,9 +341,16 @@ def dh_encrypt(pub, message):
         - Derive a fresh shared key.
         - Use the shared key to AES_GCM encrypt the message.
         - Optionally: sign the message.
-    """
-    
+    """   
     ## YOUR CODE HERE
+    
+    
+    
+    
+    
+    
+    
+    
     pass
 
 def dh_decrypt(priv, ciphertext):
