@@ -368,7 +368,7 @@ def dh_encrypt(pub, message):
     #print keystring
     ciphertext, tag = aes.quick_gcm_enc(key,iv,plaintext)
   
-    return (iv, ciphertext, tag, our_priv_dec)
+    return (iv, ciphertext, tag, our_pub_enc)
 
 
 def dh_decrypt(pub,priv, ciphertext, iv, tag):

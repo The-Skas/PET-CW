@@ -339,3 +339,8 @@ def test_check_fail():
 def test_key_gen():
     from Lab01Code import dh_get_key
     G, priv, pub = dh_get_key()
+    message = u"HelloWorld"
+    iv, ciphertext, tag, prev_dec = dh_encrypt(pub, message)
+    
+    dh_decrypt(pub, priv) 
+     
