@@ -385,4 +385,11 @@ def test_fails():
 #           - Fix one implementation to not leak information.
 
 def time_scalar_mul():
+    
+    #Test 1: time salar multiplication of double-and-add routine
+    
+    
+    
     pass
+    
+    

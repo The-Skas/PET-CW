@@ -326,6 +326,7 @@ def ecdsa_verify(G, pub_verify, message, sig):
 #
 # NOTE: 
 
+
 def dh_get_key():
     """ Generate a DH key pair """
     G = EcGroup()
@@ -335,30 +336,64 @@ def dh_get_key():
 
 
 def dh_encrypt(pub, message):
-    """ Assume you know the public key of someone else (Bob), 
-    and wish to Encrypt a message for them.
-        - Generate a fresh DH key for this message.
-        - Derive a fresh shared key.
-        - Use the shared key to AES_GCM encrypt the message.
-        - Optionally: sign the message.
-    """   
-    ## YOUR CODE HERE
+    # first get our public/private key pair
+    G, our_priv_dec, our_pub_enc = dh_get_key()
+    # generate fresh shared key from the pub key passed and our own private key
+    # DH elliptic curve exchange
+    # shared point on ec is product of other's public key 
+    # and our private key
+    # print type(pub) #EcPt
+    # print type(our_priv_dec) #Bn
+    shared_point = pub.pt_mul(our_priv_dec)
     
+    # wikipedia (page for Elliptic Curve Diffie-Hellman) 
+    # states that shared secret is the x coordinate of this shared point
     
-    
-    
-    
-    
-    
-    
-    pass
+    x, y = shared_point.get_affine()
 
-def dh_decrypt(priv, ciphertext):
+    # encrypt using aes_gcm
+    
+    aes = Cipher("aes-128-gcm")
+    iv = urandom(16)
+    # check that x is within range of values allowed in aes:
+    # we are using 128 bits so we should take low 128 bits of x. 
+    
+    x = x % Bn.from_hex("100000000000000000000000000000000") # that's 1 with 32 zeros
+    plaintext = message.encode("utf8")
+    keystring = x.hex().encode("utf8")
+    key = unhexlify(keystring)
+    
+    #print type(key)
+    
+    #print keystring
+    ciphertext, tag = aes.quick_gcm_enc(key,iv,plaintext)
+  
+    return (iv, ciphertext, tag, our_priv_dec)
+
+
+def dh_decrypt(pub,priv, ciphertext, iv, tag):
     """ Decrypt a received message encrypted using your public key, 
     of which the private key is provided"""
     
     ## YOUR CODE HERE
-    pass
+    # pub, Bob's public key
+    # priv, my private key
+    # ciphertext: the ciphertext
+    # iv: the initialisation vector
+    # tag: the tag created during encipherment
+         
+    shared_point = pub.pt_mul(priv)
+    
+    x, y = shared_point.get_affine()
+    x = x % Bn.from_hex("100000000000000000000000000000000") # that's 1 with 32 zeros
+    keystring = x.hex().encode("utf8")
+    print keystring
+    key = unhexlify(keystring)
+
+    aes = Cipher("aes-128-gcm")
+    plain = aes.quick_gcm_dec(key,iv,ciphertext,tag)
+    
+    return plain.encode("utf8")
 
 ## NOTE: populate those (or more) tests
 #  ensure they run using the "py.test filename" command.
