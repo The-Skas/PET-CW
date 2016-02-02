@@ -375,14 +375,15 @@ def dh_decrypt(priv, cipherblock):
 #############
 # Task5 Tests
 #############
+from Lab01Code import dh_encrypt
+from Lab01Code import dh_decrypt
 from Lab01Code import dh_get_key
 from petlib.ec import EcGroup 
 from petlib.ec import EcPt
 from petlib.bn import Bn
-from Lab01Code import dh_encrypt
-from Lab01Code import dh_decrypt
-from collections import namedtuple
- 
+from collections import namedtuple 
+from pytest import raises
+
 def test_key_gen():
     G, alice_priv, alice_pub = dh_get_key()
     #check expected types
@@ -487,10 +488,10 @@ def time_scalar_mul():
     timed_run(a,b,p,gx0,gy0,Bn(63))
 
 
-def timed_run(a, b, p, gx0, gy0, r): 
+def timed_run(a, b, p, gx0, gy0, r, loops = 100): 
     testmodule = 'enhanced'
     start = time.clock()
-    for i in range(100):
+    for i in range(loops):
         if testmodule == 'enhanced' :
             point_scalar_multiplication_montgomerry_ladder_const_time(a, b, p, gx0, gy0, r)
         else:   
@@ -499,9 +500,85 @@ def timed_run(a, b, p, gx0, gy0, r):
     end = time.clock()
     #print "start run 100x  scalar is ",r, "time ", start
     #print "end   run 100x  scalar is ",r, "time ", end
-    print "duration  100x  scalar is ",r, "time ", end-start
+    print "         duration  100x  scalar is ",r, "time ", end-start
+    return end-start 
+
+def test_no_time_leak_exponential():
+    """
+    Tests that there is no exponential time difference between
+    exponentially increasing scalers.
+
+    In this case, the exponent is 2^e
+    """
+     
+    
+    G = EcGroup(713) # NIST curve
+    d = G.parameters()
+    a, b, p = d["a"], d["b"], d["p"]
+    g = G.generator()
+    gx0, gy0 = g.get_affine()
+    
+    number_of_loops = 1
+    #scalers of times 2 difference
+    scalers = [8,16,32,64,128,256, 512]
+    prev_time_diff =  10000000
+
+    print "\n"
+    for scaler in scalers:	
+      time_diff = timed_run(a,b,p,gx0,gy0,Bn(scaler),number_of_loops)
+      
+      #the previous time should not be greater then double, such that
+      #it is dependent on the scaler      
+      assert not(time_diff > prev_time_diff * 2.0)
+
+def test_no_time_leak_linear():
+    """
+    Tests that there is no linear time difference between
+    exponentially increasing scalers. an error range
+    of episolon +/- is used inbetween scaler times
+
+    In this case, the exponent of the scalers are 2^e
+    """
+     
+    print "\n"
+
+    G = EcGroup(713) # NIST curve
+    d = G.parameters()
+    a, b, p = d["a"], d["b"], d["p"]
+    g = G.generator()
+    gx0, gy0 = g.get_affine()
+    
+    number_of_loops = 1
+    #scalers of times 2 difference
+    scalers = [8,16,32,64,128,256, 512]
     
 
+        #Use a calculation of montegarmy const ladder, with smallest scaler
+    #to represent epsilon, the allowed error range
+    
+    epsilon =  timed_run(a,b,p,gx0,gy0,Bn(1),number_of_loops)
+    prev_time_diff = epsilon
+
+    """
+    So with this double loop we are calculating the timing for the montgemary 
+    ladder for a given scalar in the list, and comparing it with the timing 
+    of every other scaler. We are making sure non of the timing differences go 
+    beyond the epislon. This operation is then O(N^2) 
+    """
+    for i, scaler in enumerate(scalers):
+      print ""	
+
+      print "########"
+      prev_time_diff = timed_run(a,b,p,gx0,gy0,Bn(scaler),number_of_loops)
+      print scaler, "time:", prev_time_diff
+      for j, inner_scaler  in enumerate(scalers[i::]):
+	      print "        ",scaler,"vs", inner_scaler	
+	      time_diff = timed_run(a,b,p,gx0,gy0,Bn(inner_scaler),number_of_loops)
+	      #the current time_diff shouldnt exceed the previous scaler time + e
+			  #and shouldnt be less then th eprevious scaler time - e     
+	      assert not(time_diff > prev_time_diff + epsilon and time_diff < prev_time_diff - epsilon)
+        	
+     
 #####################################################
 # The code above (timed_run) shows that even the montgommerry-ladder approach
 # leaks information: the time taken is independent of the number of 1s and 0s 
@@ -560,5 +637,4 @@ def point_scalar_multiplication_montgomerry_ladder_const_time(a, b, p, x, y, sca
 
 #time_scalar_mul()  
     
-    #Test 1: time salar multiplication of double-and-add routine
  
