@@ -338,21 +338,101 @@ def test_check_fail():
 @pytest.mark.task5
 def test_key_gen():
     from Lab01Code import dh_get_key
+    from petlib.ec import EcGroup 
+    from petlib.ec import EcPt
+    from petlib.bn import Bn
     from Lab01Code import dh_encrypt
     from Lab01Code import dh_decrypt
+    from collections import namedtuple
+    CipherBlock = namedtuple('CipherBlock', ['iv','tag', 'ciphertext','publickey'])
+
+    G, alice_priv, alice_pub = dh_get_key()
+
+    #check expected types
+    assert type(G) == type(EcGroup()) 
+    assert type(alice_priv) == type(Bn())
+    assert type(alice_pub)  == type(  G.order().random() * EcGroup().generator() )
+
     
-    G, bob_priv, bob_pub = dh_get_key()
+@pytest.mark.task5
+def test_encrypt():
+    from Lab01Code import dh_get_key
+    from Lab01Code import dh_encrypt
+    from Lab01Code import dh_decrypt
+    from collections import namedtuple
+    CipherBlock = namedtuple('CipherBlock', ['iv','tag', 'ciphertext','publickey'])
+
+    G, alice_priv, alice_pub = dh_get_key()
     message = u"HelloWorld"
-    cipherblock = dh_encrypt(bob_pub, message)
-    #Should throw error on fail  
-    message_dec = dh_decrypt( bob_priv, cipherblock) 
+    cipherblock = dh_encrypt(alice_pub, message)
+    assert len(cipherblock.iv) == 16
+    assert len(cipherblock.tag) == 16
+    assert len(cipherblock.ciphertext) == 10
+
+    #assert the public keys are different
+    bob_pub = cipherblock.publickey
+    assert not bob_pub == alice_pub
+
+@pytest.mark.task5
+def test_decrypt():
+    from Lab01Code import dh_get_key
+    from Lab01Code import dh_encrypt
+    from Lab01Code import dh_decrypt
+    from collections import namedtuple
+    CipherBlock = namedtuple('CipherBlock', ['iv','tag', 'ciphertext','publickey'])
+
+    G, alice_priv, alice_pub = dh_get_key()
+    message = u"HelloWorld"
+    cipherblock = dh_encrypt(alice_pub, message) 
+    message_dec = dh_decrypt( alice_priv, cipherblock) 
+
+    #Check if we successfully get the decrypted message.
     assert message_dec == b'HelloWorld' 
 
     #assert publickeys are different 
-
-    alice_pub = cipherblock.publickey
+    bob_pub = cipherblock.publickey
     assert not bob_pub == alice_pub
 
-    #assert should throw an exception on failed decrypt
- 
-    decrypt_message(K, iv, urandom(len(ciphertext)), tag)
+  
+@pytest.mark.task5
+def test_fails():
+    from pytest import raises
+    from os import urandom
+    from Lab01Code import dh_get_key
+    from Lab01Code import dh_encrypt
+    from Lab01Code import dh_decrypt
+    from collections import namedtuple
+    CipherBlock = namedtuple('CipherBlock', ['iv','tag', 'ciphertext','publickey'])
+
+    G, alice_priv, alice_pub = dh_get_key()
+    message = u"HelloWorld"
+    cipherblock = dh_encrypt(alice_pub, message)
+
+    iv = cipherblock.iv; tag = cipherblock.tag; ciphertext = cipherblock.ciphertext; bob_publickey = cipherblock.publickey
+
+    ## Test fail if wrong public key 
+    wrong_G, wrong_priv, wrong_pub_key = dh_get_key() 
+    with raises(Exception) as excinfo:
+        dh_decrypt(alice_priv, CipherBlock( iv, tag, ciphertext, wrong_pub_key))
+    assert 'decryption failed' in str(excinfo.value)
+
+    ## Test fail if wrong ciphertext 
+    with raises(Exception) as excinfo:
+        dh_decrypt(alice_priv, CipherBlock( iv, tag, urandom(len(ciphertext)), bob_publickey))
+    assert 'decryption failed' in str(excinfo.value)
+
+    ## Test fail if wrong tag 
+    with raises(Exception) as excinfo:
+        dh_decrypt(alice_priv, CipherBlock(iv, urandom(len(tag)), ciphertext, bob_publickey))
+    assert 'decryption failed' in str(excinfo.value)
+   
+    ## Test fail if wrong iv
+    with raises(Exception) as excinfo:	
+        dh_decrypt(alice_priv, CipherBlock(urandom(len(iv)), tag, ciphertext, bob_publickey)) 
+    assert 'decryption failed' in str(excinfo.value)
+    
+    ## Test fail if wrong private key    
+    with raises(Exception) as excinfo:	
+        dh_decrypt(wrong_priv, CipherBlock(urandom(len(iv)), tag, ciphertext, bob_publickey)) 
+    assert 'decryption failed' in str(excinfo.value)
+

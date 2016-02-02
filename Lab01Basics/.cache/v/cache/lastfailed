@@ -1,1 +1,6 @@
-{}
+{
+  "Lab01Tests.py::test_decrypt": true, 
+  "Lab01Tests.py::test_encrypt": true, 
+  "Lab01Tests.py::test_fails": true, 
+  "Lab01Tests.py::test_key_gen": true
+}
