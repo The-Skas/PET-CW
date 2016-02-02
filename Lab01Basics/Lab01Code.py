@@ -371,6 +371,10 @@ def dh_decrypt(priv, cipherblock):
     
     return plain.encode("utf8")
 
+
+#############
+# Task5 Tests
+#############
 from Lab01Code import dh_get_key
 from petlib.ec import EcGroup 
 from petlib.ec import EcPt
@@ -459,12 +463,102 @@ def test_fails():
 #              scalar sizes)
 #           - Print reports on timing dependencies on secrets.
 #           - Fix one implementation to not leak information.
+import time
+from Lab01Code import point_scalar_multiplication_double_and_add
+from Lab01Code import point_scalar_multiplication_montgomerry_ladder
+from Lab01Code import point_add
+from Lab01Code import point_double
 
 def time_scalar_mul():
+
+    # take code from Lab01Tests.py to initialise variales
+    
+    G = EcGroup(713) # NIST curve
+    d = G.parameters()
+    a, b, p = d["a"], d["b"], d["p"]
+    g = G.generator()
+    gx0, gy0 = g.get_affine()
+
+    timed_run(a,b,p,gx0,gy0,Bn(1))
+    timed_run(a,b,p,gx0,gy0,Bn(15))
+    timed_run(a,b,p,gx0,gy0,Bn(16))
+    timed_run(a,b,p,gx0,gy0,Bn(31))
+    timed_run(a,b,p,gx0,gy0,Bn(32))
+    timed_run(a,b,p,gx0,gy0,Bn(63))
+
+
+def timed_run(a, b, p, gx0, gy0, r): 
+    testmodule = 'enhanced'
+    start = time.clock()
+    for i in range(100):
+        if testmodule == 'enhanced' :
+            point_scalar_multiplication_montgomerry_ladder_const_time(a, b, p, gx0, gy0, r)
+        else:   
+            point_scalar_multiplication_montgomerry_ladder(a, b, p, gx0, gy0, r)
+
+    end = time.clock()
+    #print "start run 100x  scalar is ",r, "time ", start
+    #print "end   run 100x  scalar is ",r, "time ", end
+    print "duration  100x  scalar is ",r, "time ", end-start
+    
+
+#####################################################
+# The code above (timed_run) shows that even the montgommerry-ladder approach
+# leaks information: the time taken is independent of the number of 1s and 0s 
+# in the problem but totally dependent on the total number of bits
+# A way of avoiding this (at the cost of extra time) is to force the 
+# implementation to run over the same number of cycles regardless of the 
+# size of the scalar. 
+#
+# A revised montgommerry-ladder routine could be like this:
+
+def point_scalar_multiplication_montgomerry_ladder_const_time(a, b, p, x, y, scalar):
+    """
+    Implement Point multiplication with a scalar:
+        r * (x, y) = (x, y) + ... + (x, y)    (r times)
+
+    Reminder of Double and Multiply algorithm: r * P
+        R0 = infinity
+        R1 = P
+        for i in num_bits(P)-1 to zero:
+            if di = 0:
+                R1 = R0 + R1
+                R0 = 2R0
+            else
+                R0 = R0 + R1
+                R1 = 2 R1
+        return R0
+
+    """
+    R0 = (None, None)
+    R1 = (x, y)
+    x0 = R0[0]      # tuples are immutable so we have to split them to do arithmetic on them!
+    y0 = R0[1] 
+    x1 = R1[0]
+    y1 = R1[1]
+    maxsize = 512
+    if scalar.num_bits() > maxsize:
+       raise Exception ("Scalar Too Big!")
+
+#   for i in num_bits(P)-1 to zero:
+    for i in reversed(range(0,maxsize)):
+#       if di = 0:
+        if (not scalar.is_bit_set(i)) or i>scalar.num_bits(): 
+#           R1 = R0 + R1
+            x1, y1 = point_add(a, b, p, x0, y0, x1, y1)   
+#           R0 = 2R0
+            x0, y0 = point_double(a, b, p, x0, y0)
+#       else
+        else: 
+#           R0 = R0 + R1
+            x0, y0 = point_add(a, b, p, x0, y0, x1, y1)   
+#           R1 = 2 R1
+            x1, y1 = point_double(a, b, p, x1, y1)
+#   return R0
+    return x0, y0
+
+
+#time_scalar_mul()  
     
     #Test 1: time salar multiplication of double-and-add routine
-    
-    
-    
-    
-    
+ 
