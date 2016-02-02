@@ -448,7 +448,7 @@ def test_fails():
     
     ## Test fail if wrong private key    
     with raises(Exception) as excinfo:	
-        dh_decrypt(wrong_priv, CipherBlock(urandom(len(iv)), tag, ciphertext, bob_publickey)) 
+        dh_decrypt(wrong_priv, CipherBlock(iv, tag, ciphertext, bob_publickey)) 
     assert 'decryption failed' in str(excinfo.value)
 
 ## NOTE: populate those (or more) tests
