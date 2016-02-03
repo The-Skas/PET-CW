@@ -1,6 +1,14 @@
 #####################################################
 # GA17 Privacy Enhancing Technologies -- Lab 01
 #
+# Coded by: 
+#	Andrew Wood
+#	Salman Khalifa
+#
+# Note, run tests on this file with the following command:
+#		py.test -s -v Lab01Code.py
+# The -s is needed for understading some tests that make use of printing
+#
 # Basics of Petlib, encryption, signatures and
 # an end-to-end encryption system.
 #
