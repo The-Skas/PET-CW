@@ -503,6 +503,9 @@ def timed_run(a, b, p, gx0, gy0, r, loops = 100):
     print "         duration  100x  scalar is ",r, "time ", end-start
     return end-start 
 
+############################
+# Tests for task_6
+############################
 def test_no_time_leak_exponential():
     """
     Tests that there is no exponential time difference between
