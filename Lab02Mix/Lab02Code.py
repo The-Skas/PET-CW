@@ -10,7 +10,7 @@
 # TASK 1 -- Ensure petlib is installed on the System
 #           and also pytest. Ensure the Lab Code can 
 #           be imported.
-
+import pytest
 from collections import namedtuple
 from hashlib import sha512
 from struct import pack, unpack
@@ -169,7 +169,7 @@ NHopMixMessage = namedtuple('NHopMixMessage', ['ec_public_key',
                                                    'message'])
 
 
-def mix_server_n_hop(private_key, message_list, final=False):
+def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None, hop=0):
     """ Decodes a NHopMixMessage message and outputs either messages destined
     to the next mix or a list of tuples (address, message) (if final=True) to be 
     sent to their final recipients.
@@ -219,7 +219,6 @@ def mix_server_n_hop(private_key, message_list, final=False):
         h.update(msg.message)
 
         expected_mac = h.digest()
-
         if not secure_compare(msg.hmacs[0], expected_mac[:20]):
             raise Exception("HMAC check failure")
 
@@ -230,17 +229,25 @@ def mix_server_n_hop(private_key, message_list, final=False):
         new_hmacs = []
         for i, other_mac in enumerate(msg.hmacs[1:]):
             # Ensure the IV is different for each hmac
-            iv = pack("H14s", i, b"\x00"*14)
-
+	    #TODO: Change back 0 to i
+            iv = pack("H14s", 0, b"\x00"*14)
+	    
+	    #If this is the hmac_plaint text then it is decrypting.
+	
+	    assert(debug_messages["macs"][hop][i+1] == other_mac)
             hmac_plaintext = aes_ctr_enc_dec(hmac_key, iv, other_mac)
+	    assert(debug_messages["macs"][hop-1][i] == hmac_plaintext)
             new_hmacs += [hmac_plaintext]
 
         # Decrypt address & message
         iv = b"\x00"*16
-        
+       	if(len(debug_messages["addr"]) > 1): 
+		assert msg.address == debug_messages["addr"][hop]
+
         address_plaintext = aes_ctr_enc_dec(address_key, iv, msg.address)
         message_plaintext = aes_ctr_enc_dec(message_key, iv, msg.message)
-
+	if(len(debug_messages["addr"]) > 1): 
+		assert address_plaintext == debug_messages["addr"][hop-1]
         if final:
             # Decode the address and message
             address_len, address_full = unpack("!H256s", address_plaintext)
@@ -279,8 +286,61 @@ def mix_client_n_hop(public_keys, address, message):
     client_public_key  = private_key * G.generator()
 
     ## ADD CODE HERE
+    address_cipher_i = address_plaintext
+    message_cipher_i = message_plaintext
+    hmacs = list()
+    debug_messages = {}
+    debug_messages["mesg"] = []
+    debug_messages["addr"] = [] 
+    debug_messages["macs"] = [] 
+    for pk_i, public_key in enumerate(public_keys[::-1]):
+	shared_element = private_key * public_key
+	key_material = sha512(shared_element.export()).digest()
+	
+	hmac_key = key_material[:16]
+	address_key = key_material[16:32]
+	message_key = key_material[32:48]
+	
+	#Extract blinding factor
+	blinding_factor = Bn.from_binary(key_material[48:])
+	new_ec_public_key = blinding_factor * public_key
+	
+	aes = Cipher("AES-128-CTR")
 
-    return NHopMixMessage(client_public_key, hmacs, address_cipher, message_cipher)
+	#Encrypt message, address
+	iv = b"\x00"*16
+	address_cipher_i = aes_ctr_enc_dec(address_key, iv, address_cipher_i) 
+	message_cipher_i = aes_ctr_enc_dec(message_key, iv, message_cipher_i) 
+	#Generate Hmac
+	"""
+	Here we are encrypting each hmac with the public key 
+	"""
+	h = Hmac(b"sha512", hmac_key)
+
+	#debugging
+	for i, hmac_i in enumerate(hmacs):
+	   #Safe programming: we should never get here when pk_i == 0
+	   assert not (pk_i == 0)
+	   iv = pack("H14s", 0, b"\x00"*14) 
+	   new_hmac_cipher = aes_ctr_enc_dec(hmac_key, iv, hmac_i)
+	   
+	   hmacs[i] = new_hmac_cipher
+	   h.update(hmacs[i])
+	
+
+	
+	h.update(address_cipher_i)	
+	h.update(message_cipher_i)
+	
+	hmac_i = h.digest()[:20]
+	
+	hmacs.insert(0, hmac_i)	
+	debug_messages["addr"] += [address_cipher_i]
+	debug_messages["mesg"] += [message_cipher_i]	
+	debug_messages["macs"] += [list(hmacs)]
+	
+	
+    return NHopMixMessage(client_public_key, hmacs, address_cipher_i, message_cipher_i), debug_messages
 
 
 
