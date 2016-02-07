@@ -199,7 +199,7 @@ def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None
         ## First get a shared key
         shared_element = private_key * msg.ec_public_key
         key_material = sha512(shared_element.export()).digest()
-	assert(key_material == debug_messages["shar"][hop])
+
         # Use different parts of the shared key for different operations
         hmac_key = key_material[:16]
         address_key = key_material[16:32]
@@ -208,15 +208,6 @@ def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None
         # Extract a blinding factor for the public_key
         blinding_factor = Bn.from_binary(key_material[48:])
         new_ec_public_key = blinding_factor * msg.ec_public_key
-	pytest.set_trace()
-	##Debuging purposes
-	##does this fail?	
-	iv = b"\x00"*16
-       	if(len(debug_messages["addr"]) > 2): 
-		assert msg.address == debug_messages["addr"][hop]
-
-        address_plaintext = aes_ctr_enc_dec(address_key, iv, msg.address)
-        message_plaintext = aes_ctr_enc_dec(message_key, iv, msg.message)
 
         ## Check the HMAC
         h = Hmac(b"sha512", hmac_key)
@@ -250,12 +241,12 @@ def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None
 
         # Decrypt address & message
         iv = b"\x00"*16
-       	if(len(debug_messages["addr"]) > 2): 
+       	if(len(debug_messages["addr"]) > 1): 
 		assert msg.address == debug_messages["addr"][hop]
 
         address_plaintext = aes_ctr_enc_dec(address_key, iv, msg.address)
         message_plaintext = aes_ctr_enc_dec(message_key, iv, msg.message)
-	if(len(debug_messages["addr"]) > 2): 
+	if(len(debug_messages["addr"]) > 1): 
 		assert address_plaintext == debug_messages["addr"][hop-1]
         if final:
             # Decode the address and message
@@ -294,10 +285,6 @@ def mix_client_n_hop(public_keys, address, message):
     private_key = G.order().random()
     client_public_key  = private_key * G.generator()
 
-    ##Over written at end
-    new_client_public_key = None
-	
-    #Start as the last mix node's public key since were encrypting in reverse order
     ## ADD CODE HERE
     address_cipher_i = address_plaintext
     message_cipher_i = message_plaintext
@@ -306,42 +293,17 @@ def mix_client_n_hop(public_keys, address, message):
     debug_messages["mesg"] = []
     debug_messages["addr"] = [] 
     debug_messages["macs"] = [] 
-    debug_messages["shar"] = []
-
-    debug_messages["mesg"]+= [message_plaintext]
-    debug_messages["addr"]+= [address_plaintext]
-  	
-    reverse_public_keys =  public_keys[::-1] 	
-    PK_LAST_INDEX = len(reverse_public_keys ) - 1
-    assert(len(reverse_public_keys) == len(public_keys)) 
-    #First public key 
-    new_ec_public_key  = public_keys[0]
-    key_materials = []
-
-    for pk_i, public_key in enumerate(public_keys):
-	shared_element = private_key *  new_ec_public_key 
+    for pk_i, public_key in enumerate(public_keys[::-1]):
+	shared_element = private_key * public_key
+	key_material = sha512(shared_element.export()).digest()
 	
-	key_material = sha512(shared_element.export()).digest()	
-
-	#Append to list
-	key_materials.insert(0,key_material)
-
+	hmac_key = key_material[:16]
+	address_key = key_material[16:32]
+	message_key = key_material[32:48]
+	
+	#Extract blinding factor
 	blinding_factor = Bn.from_binary(key_material[48:])
-	#Get the next public key 
-	if(pk_i + 1 < len(public_keys)):
-		new_ec_public_key = blinding_factor * public_keys[pk_i+1] 
-
-
-		
-	
-    for pk_i, public_key in enumerate(reverse_public_keys):
-
-	hmac_key = key_materials[pk_i][:16]
-	address_key = key_materials[pk_i][16:32]
-	message_key = key_materials[pk_i][32:48]
-	
-	
-		
+	new_ec_public_key = blinding_factor * public_key
 	
 	aes = Cipher("AES-128-CTR")
 
@@ -376,7 +338,6 @@ def mix_client_n_hop(public_keys, address, message):
 	debug_messages["addr"] += [address_cipher_i]
 	debug_messages["mesg"] += [message_cipher_i]	
 	debug_messages["macs"] += [list(hmacs)]
-	debug_messages["shar"] += [key_materials[pk_i]]
 	
 	
     return NHopMixMessage(client_public_key, hmacs, address_cipher_i, message_cipher_i), debug_messages

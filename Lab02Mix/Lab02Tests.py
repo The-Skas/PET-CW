@@ -170,7 +170,7 @@ def test_Alice_encode_3_hop():
     g = G.generator()
     o = G.order()
 
-    private_keys = [o.random() for _ in range(3)]
+    private_keys = [o.random() for _ in range(4)]
     public_keys  = [pk * g for pk in private_keys]
 
     address = b"Alice"
@@ -179,7 +179,9 @@ def test_Alice_encode_3_hop():
     m1,debug_messages = mix_client_n_hop(public_keys, address, message)
     out = mix_server_n_hop(private_keys[0], [m1], debug_messages=debug_messages,hop=-1)
     out = mix_server_n_hop(private_keys[1], out, debug_messages = debug_messages, hop=-2)
-    out = mix_server_n_hop(private_keys[2], out, final=True)
+    out = mix_server_n_hop(private_keys[2], out, debug_messages = debug_messages, hop=-3)
+ 
+    out = mix_server_n_hop(private_keys[3], out, final=True, debug_messages = debug_messages, hop=-4)
 
     assert len(out) == 1
     assert out[0][0] == address
