@@ -169,7 +169,7 @@ NHopMixMessage = namedtuple('NHopMixMessage', ['ec_public_key',
                                                    'message'])
 
 
-def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None, hop=-1):
+def mix_server_n_hop(private_key, message_list, final=False):
     """ Decodes a NHopMixMessage message and outputs either messages destined
     to the next mix or a list of tuples (address, message) (if final=True) to be 
     sent to their final recipients.
@@ -199,8 +199,6 @@ def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None
         ## First get a shared key
         shared_element = private_key * msg.ec_public_key
         key_material = sha512(shared_element.export()).digest()
-	assert(msg.ec_public_key == debug_messages["clpk"][hop])
-	assert(key_material == debug_messages["shar"][hop])
         # Use different parts of the shared key for different operations
         hmac_key = key_material[:16]
         address_key = key_material[16:32]
@@ -210,16 +208,7 @@ def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None
         blinding_factor = Bn.from_binary(key_material[48:])
         new_ec_public_key = blinding_factor * msg.ec_public_key
 
-	pytest.set_trace()
-	##Debuging purposes
-	##does this fail?	
-	iv = b"\x00"*16
-       	if(len(debug_messages["addr"]) > 2): 
-		assert msg.address == debug_messages["addr"][hop]
-
-        address_plaintext = aes_ctr_enc_dec(address_key, iv, msg.address)
-        message_plaintext = aes_ctr_enc_dec(message_key, iv, msg.message)
-
+	
         ## Check the HMAC
         h = Hmac(b"sha512", hmac_key)
 
@@ -240,25 +229,16 @@ def mix_server_n_hop(private_key, message_list, final=False, debug_messages=None
         new_hmacs = []
         for i, other_mac in enumerate(msg.hmacs[1:]):
             # Ensure the IV is different for each hmac
-	    #TODO: Change back 0 to i
-            iv = pack("H14s", i, b"\x00"*14)
-	    
-	    #If this is the hmac_plaint text then it is decrypting.
-	
-	    assert(debug_messages["macs"][hop][i+1] == other_mac)
+            iv = pack("H14s", i, b"\x00"*14) 	
             hmac_plaintext = aes_ctr_enc_dec(hmac_key, iv, other_mac)
-	    assert(debug_messages["macs"][hop-1][i] == hmac_plaintext)
             new_hmacs += [hmac_plaintext]
 
         # Decrypt address & message
         iv = b"\x00"*16
-       	if(len(debug_messages["addr"]) > 2): 
-		assert msg.address == debug_messages["addr"][hop]
 
         address_plaintext = aes_ctr_enc_dec(address_key, iv, msg.address)
         message_plaintext = aes_ctr_enc_dec(message_key, iv, msg.message)
-	if(len(debug_messages["addr"]) > 2): 
-		assert address_plaintext == debug_messages["addr"][hop-1]
+	
         if final:
             # Decode the address and message
             address_len, address_full = unpack("!H256s", address_plaintext)
@@ -295,35 +275,15 @@ def mix_client_n_hop(public_keys, address, message):
     ## Generate a fresh public key
     private_key = G.order().random()
     client_public_key  = private_key * G.generator()
-
-    ##Over written at end
-    new_client_public_key = None
 	
     #Start as the last mix node's public key since were encrypting in reverse order
-    ## ADD CODE HERE
     address_cipher_i = address_plaintext
-    message_cipher_i = message_plaintext
+    message_cipher_i = message_plaintext 	
+
+    #Initialize Lists.
     hmacs = list()
-    debug_messages = {}
-    debug_messages["mesg"] = []
-    debug_messages["addr"] = [] 
-    debug_messages["macs"] = [] 
-    debug_messages["shar"] = []
-    debug_messages["clpk"] = []
-
-    debug_messages["mesg"]+= [message_plaintext]
-    debug_messages["addr"]+= [address_plaintext]
-  	
-    reverse_public_keys =  public_keys[::-1] 	
-    PK_LAST_INDEX = len(reverse_public_keys ) - 1
-    assert(len(reverse_public_keys) == len(public_keys)) 
-
-    #Assign the first public_key as start value to new_ec_public_key
-    new_ec_public_key  = public_keys[0]
     key_materials = []
-    debug_client_pk = client_public_key
 
-    debug_messages["clpk"].insert(0,debug_client_pk) 
     #Set default priv key
     private_key_mult = private_key
 
@@ -338,17 +298,18 @@ def mix_client_n_hop(public_keys, address, message):
 	#derive blinding_factor from shared_key
 	blinding_factor = Bn.from_binary(key_material[48:])
 	
-	##Debugging
-	#debug_client_privk = blinding_factor * private_key
-	#debug_client_pk = blinding_factor * debug_client_pk
-	#debug_messages["clpk"].insert(0,debug_client_pk) 
-	###Debugging
-
 	#multiply the current private key by the blinding_factor 
 	private_key_mult *= blinding_factor
 	
-	
-    for pk_i, public_key in enumerate(reverse_public_keys):
+
+    """
+    This iterates on the public keys on reverse order.
+    Such that the first layer of encryption is the (N)th node
+    followed by the (N-1) node, (N-2) node, etc.. , (0) node
+
+    That way layer apon layers of encryptions are performed. 
+    """				     #Get reverse list	
+    for pk_i, public_key in enumerate(public_keys[::-1]):
 	#Get keys for address, hmac, and message for 
 	#the associated public_key
 	hmac_key = key_materials[pk_i][:16]
@@ -369,7 +330,6 @@ def mix_client_n_hop(public_keys, address, message):
 	"""
 	h = Hmac(b"sha512", hmac_key)
 
-	#debugging
 	for i, hmac_i in enumerate(hmacs):
 	   #Safe programming: we should never get here when pk_i == 0
 	   assert not (pk_i == 0)
@@ -377,9 +337,7 @@ def mix_client_n_hop(public_keys, address, message):
 	   new_hmac_cipher = aes_ctr_enc_dec(hmac_key, iv, hmac_i)
 	   
 	   hmacs[i] = new_hmac_cipher
-	   h.update(hmacs[i])
-	
-
+	   h.update(hmacs[i])	
 	
 	h.update(address_cipher_i)	
 	h.update(message_cipher_i)
@@ -387,15 +345,9 @@ def mix_client_n_hop(public_keys, address, message):
 	hmac_i = h.digest()[:20]
 	
 	hmacs.insert(0, hmac_i)	
-
-	###debug
-	debug_messages["addr"] += [address_cipher_i]
-	debug_messages["mesg"] += [message_cipher_i]	
-	debug_messages["macs"] += [list(hmacs)]
-	debug_messages["shar"] += [key_materials[pk_i]]
+		
 	
-	
-    return NHopMixMessage(client_public_key, hmacs, address_cipher_i, message_cipher_i), debug_messages
+    return NHopMixMessage(client_public_key, hmacs, address_cipher_i, message_cipher_i)
 
 
 

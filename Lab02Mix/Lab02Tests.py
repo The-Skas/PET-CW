@@ -151,8 +151,8 @@ def test_Alice_encode_1_hop():
     address = b"Alice"
     message = b"Dear Alice,\nHello!\nBob"
 
-    m1, debug_messages = mix_client_n_hop([public_key], address, message)
-    out = mix_server_n_hop(private_key, [m1], final=True, debug_messages=debug_messages)
+    m1 = mix_client_n_hop([public_key], address, message)
+    out = mix_server_n_hop(private_key, [m1], final=True)
 
     assert len(out) == 1
     assert out[0][0] == address
@@ -176,12 +176,12 @@ def test_Alice_encode_3_hop():
     address = b"Alice"
     message = b"Dear Alice,\nHello!\nBob"
 
-    m1,debug_messages = mix_client_n_hop(public_keys, address, message)
-    out = mix_server_n_hop(private_keys[0], [m1], debug_messages=debug_messages,hop=-1)
-    out = mix_server_n_hop(private_keys[1], out, debug_messages = debug_messages, hop=-2)
-    out = mix_server_n_hop(private_keys[2], out, debug_messages = debug_messages, hop=-3)
+    m1 = mix_client_n_hop(public_keys, address, message)
+    out = mix_server_n_hop(private_keys[0], [m1])
+    out = mix_server_n_hop(private_keys[1], out)
+    out = mix_server_n_hop(private_keys[2], out)
  
-    out = mix_server_n_hop(private_keys[3], out, final=True, debug_messages = debug_messages, hop=-4)
+    out = mix_server_n_hop(private_keys[3], out, final=True)
 
     assert len(out) == 1
     assert out[0][0] == address
