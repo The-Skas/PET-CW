@@ -390,8 +390,9 @@ def analyze_trace(trace, target_number_of_friends, target=0):
     return the list of receiver identifiers that are the most likely 
     friends of the target.
     """
-
-    ## ADD CODE HERE
-
-    return []
-
+    cnt = Counter() 
+    for sender, reciever in trace:
+	if target in sender:
+	   cnt += Counter(reciever)
+				
+    return [ host for host, count in cnt.most_common(target_number_of_friends)]
