@@ -150,7 +150,9 @@ def mix_client_one_hop(public_key, address, message):
     
     # finally, return One Hop mix message
     return OneHopMixMessage(client_public_key, expected_mac, address_cipher, message_cipher)
-     
+    
+    
+    return msg
     
 
 #####################################################
@@ -388,11 +390,9 @@ def analyze_trace(trace, target_number_of_friends, target=0):
     return the list of receiver identifiers that are the most likely 
     friends of the target.
     """
-    #Skas says: Python golf here i come!
-
     cnt = Counter() 
     for sender, reciever in trace:
 	if target in sender:
 	   cnt += Counter(reciever)
-
+				
     return [ host for host, count in cnt.most_common(target_number_of_friends)]
