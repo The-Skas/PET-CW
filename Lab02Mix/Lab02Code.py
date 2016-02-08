@@ -287,6 +287,11 @@ def mix_client_n_hop(public_keys, address, message):
     #Set default priv key
     private_key_mult = private_key
 
+    """
+    This iterates on public_keys, deriving the binding
+    key and multiplying by the private_key. We generate  
+    a new private key for each server public key.
+    """
     for pk_i, public_key in enumerate(public_keys):
 	#Calculate shared_key
 	shared_element = private_key_mult *  public_key 	
@@ -316,10 +321,6 @@ def mix_client_n_hop(public_keys, address, message):
 	address_key = key_materials[pk_i][16:32]
 	message_key = key_materials[pk_i][32:48]	
 	
-		
-	
-	aes = Cipher("AES-128-CTR")
-
 	#Encrypt message, address
 	iv = b"\x00"*16
 	address_cipher_i = aes_ctr_enc_dec(address_key, iv, address_cipher_i) 
