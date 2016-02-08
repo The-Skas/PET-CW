@@ -325,10 +325,7 @@ def mix_client_n_hop(public_keys, address, message):
 	iv = b"\x00"*16
 	address_cipher_i = aes_ctr_enc_dec(address_key, iv, address_cipher_i) 
 	message_cipher_i = aes_ctr_enc_dec(message_key, iv, message_cipher_i) 
-	#Generate Hmac
-	"""
-	Here we are encrypting each hmac with the public key 
-	"""
+	#Generate Hmac	
 	h = Hmac(b"sha512", hmac_key)
 
 	for i, hmac_i in enumerate(hmacs):
@@ -341,13 +338,11 @@ def mix_client_n_hop(public_keys, address, message):
 	   h.update(hmacs[i])	
 	
 	h.update(address_cipher_i)	
-	h.update(message_cipher_i)
-	
-	hmac_i = h.digest()[:20]
-	
+	h.update(message_cipher_i)	
+
+	hmac_i = h.digest()[:20]	
 	hmacs.insert(0, hmac_i)	
-		
-	
+			
     return NHopMixMessage(client_public_key, hmacs, address_cipher_i, message_cipher_i)
 
 
