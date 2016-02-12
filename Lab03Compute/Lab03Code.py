@@ -1,4 +1,4 @@
-#####################################################
+####################################################
 # GA17 Privacy Enhancing Technologies -- Lab 03
 #
 # Basics of Privacy Friendly Computations through
@@ -13,7 +13,8 @@
 #
 
 from petlib.ec import EcGroup
-
+import pytest
+import random
 def setup():
     """Generates the Cryptosystem Parameters."""
     G = EcGroup(nid=713)
@@ -25,8 +26,10 @@ def setup():
 def keyGen(params):
    """ Generate a private / public key pair """
    (G, g, h, o) = params
-   
-   # ADD CODE HERE
+   #Stop hammer time!   
+
+   priv = o.random()
+   pub  = priv*g
 
    return (priv, pub)
 
@@ -34,10 +37,11 @@ def encrypt(params, pub, m):
     """ Encrypt a message under the public key """
     if not -100 < m < 100:
         raise Exception("Message value to low or high.")
+ 
+    (G, g, h, o) = params    
+    k = o.random()    
 
-   # ADD CODE HERE
-
-    return c
+    return k*g, k*pub + m * h
 
 def isCiphertext(params, ciphertext):
     """ Check a ciphertext """
@@ -68,11 +72,11 @@ def logh(params, hm):
 def decrypt(params, priv, ciphertext):
     """ Decrypt a message using the private key """
     assert isCiphertext(params, ciphertext)
-    a , b = ciphertext
+    a , b = ciphertext 
+    (G, g, h, o) = params
+    inv = (priv * a).pt_neg()
 
-   # ADD CODE HERE
-
-    return logh(params, hm)
+    return logh(params, b + inv)
 
 #####################################################
 # TASK 2 -- Define homomorphic addition and
@@ -85,17 +89,22 @@ def add(params, pub, c1, c2):
     """
     assert isCiphertext(params, c1)
     assert isCiphertext(params, c2)
-
-   # ADD CODE HERE
-
+    a1, b1 = c1
+    a2, b2 = c2
+    
+    a3 = a1 + a2
+    b3 = b1 + b2
+#    pytest.set_trace()
+    c3 = (a3,b3)
     return c3
 
 def mul(params, pub, c1, alpha):
     """ Given a ciphertext compute the ciphertext of the 
         product of the plaintext time alpha """
     assert isCiphertext(params, c1)
-
-   # ADD CODE HERE
+    
+    a, b = c1
+    c3 = (alpha * a, alpha * b)
 
     return c3
 
