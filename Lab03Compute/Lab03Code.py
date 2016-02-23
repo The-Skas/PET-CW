@@ -114,24 +114,35 @@ def mul(params, pub, c1, alpha):
 #           set of authorities.
 
 def groupKey(params, pubKeys=[]):
-    """ Generate a group public key from a list of public keys """
-    (G, g, h, o) = params
+	""" Generate a group public key from a list of public keys """
+	(G, g, h, o) = params
+	#g^(x1+...+xn)
 
+	priv = o.random()
+	pub  = priv*g
+
+
+	pub = reduce(lambda sum, y: sum+y, pubKeys)
    # ADD CODE HERE
 
-    return pub
+	return pub
 
 def partialDecrypt(params, priv, ciphertext, final=False):
-    """ Given a ciphertext and a private key, perform partial decryption. 
+	""" Given a ciphertext and a private key, perform partial decryption. 
         If final is True, then return the plaintext. """
-    assert isCiphertext(params, ciphertext)
+	assert isCiphertext(params, ciphertext)
     
-    # ADD CODE HERE
+	a, b = ciphertext	
+	#Negate
+	inv = (priv * a).pt_neg()
+	#decrypt first priv key from b
+	#and return new 
+	b1 = b + inv
 
-    if final:
-        return logh(params, b1)
-    else:
-        return a1, b1
+	if final:
+		return logh(params, b1)
+	else:
+		return a, b1
 
 #####################################################
 # TASK 4 -- Actively corrupt final authority, derives
