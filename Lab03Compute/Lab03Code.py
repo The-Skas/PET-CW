@@ -118,12 +118,11 @@ def groupKey(params, pubKeys=[]):
 	(G, g, h, o) = params
 	#g^(x1+...+xn)
 
-	priv = o.random()
-	pub  = priv*g
+	#priv = o.random()
+	#pub  = priv*g
 
-
+	#Sums all the public keys
 	pub = reduce(lambda sum, y: sum+y, pubKeys)
-   # ADD CODE HERE
 
 	return pub
 
@@ -149,17 +148,32 @@ def partialDecrypt(params, priv, ciphertext, final=False):
 #           a public key with a known private key.
 #
 
+import petlib
 def corruptPubKey(params, priv, OtherPubKeys=[]):
     """ Simulate the operation of a corrupt decryption authority. 
         Given a set of public keys from other authorities return a
         public key for the corrupt authority that leads to a group
         public key corresponding to a private key known to the
         corrupt authority. """
-    (G, g, h, o) = params
-    
-   # ADD CODE HERE
 
-    return pub
+    (G, g, h, o) = params 
+    pub  = priv*g
+   
+
+    
+    #Calculate PosKeys Sum 
+    posKeys = groupKey(params, OtherPubKeys)
+    #Calculate Negative Sum 
+    negKeys = posKeys.pt_neg()
+    #Get zeroth point for testing purposes
+    pt_zero  = 0 * petlib.ec.EcGroup().generator() 
+    #test posKeys cancel out NegKeys
+    assert(posKeys + negKeys == pt_zero)
+
+    corruptPub = pub + negKeys
+    assert(corruptPub + posKeys == pub)
+
+    return corruptPub  
 
 #####################################################
 # TASK 5 -- Implement operations to support a simple
@@ -171,8 +185,9 @@ def encode_vote(params, pub, vote):
         ciphertexts representing the count of votes for
         zero and the votes for one."""
     assert vote in [0, 1]
-
-   # ADD CODE HERE
+    
+    v0 = encrypt(params, pub, int(vote == 0))
+    v1 = encrypt(params, pub, int(vote == 1))
 
     return (v0, v1)
 
@@ -180,8 +195,12 @@ def process_votes(params, pub, encrypted_votes):
     """ Given a list of encrypted votes tally them
         to sum votes for zeros and votes for ones. """
     assert isinstance(encrypted_votes, list)
-    
-   # ADD CODE HERE
+    list_zeros = [(c[0]) for c in encrypted_votes]
+    list_ones  = [(c[1]) for c in encrypted_votes] 
+
+    #Reduce is pretty cool.	
+    tv0 = reduce(lambda _sum, c0 : add(params, pub, _sum, c0), list_zeros)
+    tv1 = reduce(lambda _sum, c1 : add(params, pub, _sum, c1), list_ones)
 
     return tv0, tv1
 
