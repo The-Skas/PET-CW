@@ -1,3 +1,4 @@
+#Salman Khalifa
 ####################################################
 # GA17 Privacy Enhancing Technologies -- Lab 03
 #
@@ -26,8 +27,8 @@ def setup():
 def keyGen(params):
    """ Generate a private / public key pair """
    (G, g, h, o) = params
-   #Stop hammer time!   
-
+   
+   #Generate priv / pub
    priv = o.random()
    pub  = priv*g
 
@@ -74,6 +75,7 @@ def decrypt(params, priv, ciphertext):
     assert isCiphertext(params, ciphertext)
     a , b = ciphertext 
     (G, g, h, o) = params
+    
     inv = (priv * a).pt_neg()
 
     return logh(params, b + inv)
@@ -94,8 +96,8 @@ def add(params, pub, c1, c2):
     
     a3 = a1 + a2
     b3 = b1 + b2
-#    pytest.set_trace()
     c3 = (a3,b3)
+
     return c3
 
 def mul(params, pub, c1, alpha):
@@ -116,11 +118,7 @@ def mul(params, pub, c1, alpha):
 def groupKey(params, pubKeys=[]):
 	""" Generate a group public key from a list of public keys """
 	(G, g, h, o) = params
-	#g^(x1+...+xn)
-
-	#priv = o.random()
-	#pub  = priv*g
-
+	
 	#Sums all the public keys
 	pub = reduce(lambda sum, y: sum+y, pubKeys)
 
@@ -132,10 +130,12 @@ def partialDecrypt(params, priv, ciphertext, final=False):
 	assert isCiphertext(params, ciphertext)
     
 	a, b = ciphertext	
-	#Negate
+	
+        #Negate
 	inv = (priv * a).pt_neg()
+
 	#decrypt first priv key from b
-	#and return new 
+	#and return modified b 
 	b1 = b + inv
 
 	if final:
@@ -167,11 +167,13 @@ def corruptPubKey(params, priv, OtherPubKeys=[]):
     negKeys = posKeys.pt_neg()
     #Get zeroth point for testing purposes
     pt_zero  = 0 * petlib.ec.EcGroup().generator() 
+    
     #test posKeys cancel out NegKeys
     assert(posKeys + negKeys == pt_zero)
-
+    
+    #Add the negativeKeys to our pub to make
+    #the final corrupt key 
     corruptPub = pub + negKeys
-    assert(corruptPub + posKeys == pub)
 
     return corruptPub  
 
@@ -198,6 +200,8 @@ def process_votes(params, pub, encrypted_votes):
     list_zeros = [(c[0]) for c in encrypted_votes]
     list_ones  = [(c[1]) for c in encrypted_votes] 
 
+    #Sums up the list_zeros and the list_ones through
+    #our created method add.
     #Reduce is pretty cool.	
     tv0 = reduce(lambda _sum, c0 : add(params, pub, _sum, c0), list_zeros)
     tv1 = reduce(lambda _sum, c1 : add(params, pub, _sum, c1), list_ones)
