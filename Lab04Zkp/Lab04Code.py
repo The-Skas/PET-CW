@@ -40,7 +40,7 @@ def to_challenge(elements):
 #####################################################
 # TASK 1 -- Prove knowledge of a DH public key's 
 #           secret.
-
+import pytest
 def proveKey(params, priv, pub):
     """ Uses the Schnorr non-interactive protocols produce a proof 
         of knowledge of the secret priv such that pub = priv * g.
@@ -50,9 +50,13 @@ def proveKey(params, priv, pub):
                  r (the response)
     """  
     (G, g, hs, o) = params
-    
-    ## YOUR CODE HERE:
-    
+
+    (w, W) = keyGen(params)
+
+    c = to_challenge([g, W])
+
+    r = (w - c*priv) % o
+
     return (c, r)
 
 def verifyKey(params, pub, proof):
@@ -91,8 +95,19 @@ def proveCommitment(params, C, r, secrets):
     (G, g, (h0, h1, h2, h3), o) = params
     x0, x1, x2, x3 = secrets
 
-    ## YOUR CODE HERE:
+    #g is h, and h is g
+    ws  = [o.random() for _ in range(4)]
+    wr = o.random()
+    
+    W = ws[0] * h0 + ws[1] * h1 + ws[2] * h2 + ws[3] * h3 + wr * g
 
+    c = to_challenge([g, h0, h1, h2, h3, W])
+
+    responses = [w - c*x for w,x in zip(ws, secrets)]
+
+    responses += [wr - c*r]
+         
+        
     return (c, responses)
 
 def verifyCommitments(params, C, proof):
