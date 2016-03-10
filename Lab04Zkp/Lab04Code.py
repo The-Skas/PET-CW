@@ -184,7 +184,7 @@ def proveEnc(params, pub, Ciphertext, k, m):
     Wa = w1 * g
     Wb = w2 * h0 + w1 * pub 
 
-    c = to_challenge([g, h0, pub, a, b, Wk])#, Wm])
+    c = to_challenge([g, h0, pub, a, b, Wa, Wb])
 
     rk = (w1 - c * k) % o
     rm = (w2 - c * m) % o
@@ -200,8 +200,8 @@ def verifyEnc(params, pub, Ciphertext, proof):
     #since a = g * k 
     Wa = rk * g + c * a
 
-    Wb = ?? 
-    return to_challenge([g, h0, pub, a, b, Wk]) == c
+    Wb = (rm * h0 + rk * pub ) + c * b 
+    return to_challenge([g, h0, pub, a, b, Wa, Wb]) == c
 
 #####################################################
 # TASK 5 -- Prove a linear relation
