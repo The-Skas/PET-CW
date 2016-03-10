@@ -95,19 +95,17 @@ def proveCommitment(params, C, r, secrets):
     (G, g, (h0, h1, h2, h3), o) = params
     x0, x1, x2, x3 = secrets
 
-    #g is h, and h is g
+    #TODO: g is h, and h is g -- refer to slides
     ws  = [o.random() for _ in range(4)]
     wr = o.random()
-    
+
     W = ws[0] * h0 + ws[1] * h1 + ws[2] * h2 + ws[3] * h3 + wr * g
 
     c = to_challenge([g, h0, h1, h2, h3, W])
 
     responses = [w - c*x for w,x in zip(ws, secrets)]
-
     responses += [wr - c*r]
-         
-        
+
     return (c, responses)
 
 def verifyCommitments(params, C, proof):
@@ -155,7 +153,7 @@ def verifyDLEquality(params, K, L, proof):
 
     ## YOUR CODE HERE:
 
-    return # YOUR RETURN HERE
+    return to_challenge([g, h0, r*g + c*K, r*h0 + c*L]) == c
 
 #####################################################
 # TASK 4 -- Prove correct encryption and knowledge of 
@@ -179,6 +177,16 @@ def proveEnc(params, pub, Ciphertext, k, m):
     a, b = Ciphertext
 
     ## YOUR CODE HERE:
+    w1 = o.random()
+    w2 = o.random()
+
+    Wk = w1 * g
+    Wm = 0
+
+    c = to_challenge([g, h0, pub, a, b, Wk, Wm])
+
+    rk = (w1 - c * k) % o
+    rm = (w2 - c * m) % o
 
     return (c, (rk, rm))
 
