@@ -181,8 +181,8 @@ def proveEnc(params, pub, Ciphertext, k, m):
     w1 = o.random()
     w2 = o.random()
 
-    Wk = w1 * g
-    Wm = w2 * h0 
+    Wa = w1 * g
+    Wb = w2 * h0 + w1 * pub 
 
     c = to_challenge([g, h0, pub, a, b, Wk])#, Wm])
 
@@ -198,9 +198,9 @@ def verifyEnc(params, pub, Ciphertext, proof):
     (c, (rk, rm)) = proof
 
     #since a = g * k 
-    Wk = rk * g + c * a
+    Wa = rk * g + c * a
 
-    Wm = ?? 
+    Wb = ?? 
     return to_challenge([g, h0, pub, a, b, Wk]) == c
 
 #####################################################
