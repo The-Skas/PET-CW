@@ -99,6 +99,7 @@ def proveCommitment(params, C, r, secrets):
     ws  = [o.random() for _ in range(4)]
     wr = o.random()
 
+    #h0^(ws0) * h1^(ws1) ... hN^(wsN) * g^(wr)
     W = ws[0] * h0 + ws[1] * h1 + ws[2] * h2 + ws[3] * h3 + wr * g
 
     c = to_challenge([g, h0, h1, h2, h3, W])
@@ -181,9 +182,9 @@ def proveEnc(params, pub, Ciphertext, k, m):
     w2 = o.random()
 
     Wk = w1 * g
-    Wm = 0
+    Wm = w2 * h0 
 
-    c = to_challenge([g, h0, pub, a, b, Wk, Wm])
+    c = to_challenge([g, h0, pub, a, b, Wk])#, Wm])
 
     rk = (w1 - c * k) % o
     rm = (w2 - c * m) % o
@@ -196,10 +197,11 @@ def verifyEnc(params, pub, Ciphertext, proof):
     a, b = Ciphertext    
     (c, (rk, rm)) = proof
 
-    ## YOUR CODE HERE:
+    #since a = g * k 
+    Wk = rk * g + c * a
 
-    return ## YOUR RETURN HERE
-
+    Wm = ?? 
+    return to_challenge([g, h0, pub, a, b, Wk]) == c
 
 #####################################################
 # TASK 5 -- Prove a linear relation
