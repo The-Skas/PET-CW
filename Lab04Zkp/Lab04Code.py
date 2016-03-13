@@ -52,10 +52,8 @@ def proveKey(params, priv, pub):
     (G, g, hs, o) = params
 
     (w, W) = keyGen(params)
-
     c = to_challenge([g, W])
-
-    r = (w - c*priv) % o
+    r = (w - c * priv) % o
 
     return (c, r)
 
@@ -95,7 +93,6 @@ def proveCommitment(params, C, r, secrets):
     (G, g, (h0, h1, h2, h3), o) = params
     x0, x1, x2, x3 = secrets
 
-    #TODO: g is h, and h is g -- refer to slides
     ws  = [o.random() for _ in range(4)]
     wr = o.random()
 
@@ -104,8 +101,8 @@ def proveCommitment(params, C, r, secrets):
 
     c = to_challenge([g, h0, h1, h2, h3, W])
 
-    responses = [w - c*x for w,x in zip(ws, secrets)]
-    responses += [wr - c*r]
+    responses = [w - c * x for w, x in zip(ws, secrets)]
+    responses += [wr - c * r]
 
     return (c, responses)
 
@@ -152,8 +149,6 @@ def verifyDLEquality(params, K, L, proof):
     (G, g, (h0, h1, h2, h3), o) = params
     c, r = proof
 
-    ## YOUR CODE HERE:
-
     return to_challenge([g, h0, r*g + c*K, r*h0 + c*L]) == c
 
 #####################################################
@@ -177,7 +172,6 @@ def proveEnc(params, pub, Ciphertext, k, m):
     (G, g, (h0, h1, h2, h3), o) = params
     a, b = Ciphertext
 
-    ## YOUR CODE HERE:
     w1 = o.random()
     w2 = o.random()
 
@@ -197,10 +191,10 @@ def verifyEnc(params, pub, Ciphertext, proof):
     a, b = Ciphertext    
     (c, (rk, rm)) = proof
 
-    #since a = g * k 
+    # since a = g * k 
     Wa = rk * g + c * a
+    Wb = (rm * h0 + rk * pub) + c * b 
 
-    Wb = (rm * h0 + rk * pub ) + c * b 
     return to_challenge([g, h0, pub, a, b, Wa, Wb]) == c
 
 #####################################################
@@ -223,17 +217,29 @@ def prove_x0eq10x1plus20(params, C, x0, x1, r):
     """ Prove C is a commitment to x0 and x1 and that x0 = 10 x1 + 20. """
     (G, g, (h0, h1, h2, h3), o) = params
 
-    ## YOUR CODE HERE:
+    w1 = o.random()
+    w2 = o.random()
+    w3 = o.random()
 
-    return ## YOUR RETURN HERE
+    W_h0 = w1 * (10 * h0)
+    W_h1 = w1 * h1
+    W_g  = w3 * g
+    c = to_challenge([C, g, h0, W_h0 + W_h1 + W_g])
+
+    r_x1 = (w1 - c * x1) % o
+    r_r  = (w3 - c * r) % o
+
+    return c, r_x1, r_r 
 
 def verify_x0eq10x1plus20(params, C, proof):
     """ Verify that proof of knowledge of C and x0 = 10 x1 + 20. """
     (G, g, (h0, h1, h2, h3), o) = params
+    c, r_x1, r_r = proof
 
-    ## YOUR CODE HERE:
+    linear = (r_x1 * 10 * h0) + r_x1 * h1 + r_r * g
+    W = linear + c * (C + (-20 * h0))
 
-    return ## YOUR RETURN HERE
+    return to_challenge([C, g, h0, W]) == c
 
 #####################################################
 # TASK 6 -- (OPTIONAL) Prove that a ciphertext is either 0 or 1
