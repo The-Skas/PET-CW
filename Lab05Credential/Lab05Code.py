@@ -91,7 +91,7 @@ def credential_EncryptUserSecret(params, pub, priv):
     #                     pub = priv * g}
 
     ## TODO
-
+     
     # Return the fresh v, the encryption of v and the proof.
     proof = (c, rk, rv, rpriv)
     return v, ciphertext, proof
@@ -141,7 +141,8 @@ def credential_Issuing(params, pub, ciphertext, issuer_params):
     # 1) Create a "u" as u = b*g 
     # 2) Create a X1b as X1b == b * X1 == (b * x1) * h
     #     and x1b = (b * x1) mod o 
-    
+    u = b * g
+    X1b = b * x1    
     # TODO 1 & 2
 
     # 3) The encrypted MAC is u, and an encrypted u_prime defined as 
